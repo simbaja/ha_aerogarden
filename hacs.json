@@ -1,7 +1,6 @@
 {
   "name": "Aerogarden",
-  "render_readme": false,
-  "zip_release": true,
-  "filename": "aerogarden.zip",
-  "homeassistant": "2021.11.0"
+  "homeassistant": "2022.12.0",
+  "domains": ["binary_sensor", "sensor", "light"],
+  "iot_class": "Cloud Polling"
 }
