@@ -10,25 +10,18 @@ This is a custom component for [Home Assistant](http://home-assistant.io) that a
 ## Background
 This was done without help from the AeroGarden people. As far as I can tell they post no public API. I took inspiration and code from the code in this [forum post by epotex](https://community.home-assistant.io/t/first-timer-trying-to-convert-a-working-script-to-create-support-for-a-new-platform).
 
-Currently, the code is setup to query the AeroGarden servers every 30 seconds.
-
 ## Tested Models
 
 * Harvest Wifi
+* Bounty Wifi
 
 (I expect other models to work, since this queries their cloud service not the garden directly)
 
-## Setup
+## HACS Setup
+Please follow directions [here](https://hacs.xyz/docs/faq/custom_repositories/), and use https://github.com/simbaja/ha_aerogarden as the repository URL.
+
+## Manual Setup
 Copy contents of the custom_compents/aerogarden/ directory into your <HA-CONFIG>/custom_components/aerogarden directory (```/config/custom_components``` on hassio)
-
-Your directory structure should look like this:
-
-```
-   config/custom_components/aerogarden/__init__.py
-   config/custom_components/aerogarden/binary_sensor.py
-   config/custom_components/aerogarden/sensor.py
-   config/custom_components/aerogarden/light.py
-```
 
 ## Configuration
 Configuration is done through Home Assistant Config Flow in the UI.
@@ -52,5 +45,4 @@ The component supports multiple gardens and multiple sensors will be created for
 ![Screen Shot](https://raw.githubusercontent.com/simbaja/homeassistant-aerogarden/master/screen_shot.png)
 
 ## TODO
-1. Code cleanup, this is my first HA component - it probably needs some work.
-1. Turning on/off the light isn't working as smoothly as I hoped
+1. Turning on/off the light isn't working as smoothly, need to revisit
