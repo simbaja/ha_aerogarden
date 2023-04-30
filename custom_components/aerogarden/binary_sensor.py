@@ -19,15 +19,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
     sensors = []
     sensor_fields = {
         "pumpStat": {
-            "label": "pump",
+            "label": "Pump",
             "icon": "mdi:water-pump",
         },
         "nutriStatus": {
-            "label": "Needs nutrients",
+            "label": "Needs Nutrients",
             "icon": "mdi:cup-water",
         },
         "pumpHydro": {
-            "label": "Needs water",
+            "label": "Needs Water",
             "icon": "mdi:water",
         },
     }

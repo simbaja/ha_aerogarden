@@ -60,12 +60,14 @@ class AerogardenConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _test_connection(self):
         session = aiohttp_client.async_get_clientsession(self.hass)
 
-        api = AerogardenApi(self._user_input[CONF_EMAIL], self._user_input[CONF_PASSWORD])
+        api = AerogardenApi(
+            session, 
+            self._user_input[CONF_EMAIL], 
+            self._user_input[CONF_PASSWORD]
+        )
 
         #try to get account information, if we do, we're good
-        #await api.login()
-        #TODO: change to async
-        api.login()
+        await api.login()
         self.logger.info("Successfully authenticated")
                
     def _show_setup_form(self, user_input=None, errors=None, step_id="user"):

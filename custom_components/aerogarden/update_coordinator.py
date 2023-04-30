@@ -1,5 +1,7 @@
 """Data update coordinator for Aerogarden"""
 
+from datetime import timedelta
+
 import asyncio
 import logging
 from .api import AerogardenApi, AerogardenAuthFailedError, AerogardenServerError
@@ -7,12 +9,13 @@ from .exceptions import HaAuthError, HaCannotConnect
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_SCAN_INTERVAL, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
     DOMAIN,
-    MIN_TIME_BETWEEN_UPDATES
+    DEFAULT_SCAN_INTERVAL
 )
 
 PLATFORMS = ["binary_sensor", "sensor", "light"]
@@ -24,11 +27,14 @@ class AerogardenUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Set up the AerogardenUpdateCoordinator class."""
         self._hass = hass
+        self._session = aiohttp_client.async_get_clientsession(self.hass)
         self._config_entry = config_entry
         self._username = config_entry.data[CONF_USERNAME]
         self._password = config_entry.data[CONF_PASSWORD]
-        self._api = AerogardenApi(self._username, self._password)
-        self.update_interval = MIN_TIME_BETWEEN_UPDATES
+        self._api = AerogardenApi(self._session, self._username, self._password)
+
+        options = config_entry.options
+        self.update_interval = timedelta(seconds=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
 
         super().__init__(hass, _LOGGER, name=DOMAIN)
 
@@ -41,7 +47,7 @@ class AerogardenUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Setting up coordinator")
 
         try:
-            await self._hass.async_add_executor_job(self._api.login())
+            await self._api.login()
             await self.async_config_entry_first_refresh()
         except AerogardenAuthFailedError:
             raise HaAuthError("Authentication failure")

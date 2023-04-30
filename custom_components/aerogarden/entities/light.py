@@ -12,12 +12,8 @@ class AerogardenLight(AerogardenEntity, LightEntity):
     def is_on(self):
         return self._native_state != 0
 
-    #TODO: change to async
-    def turn_on(self, **kwargs):
-        self._api.light_toggle(self._macaddr)
-        self._api.update()
+    async def async_turn_on(self, **kwargs):
+        await self._api.light_toggle(self._macaddr)
 
-    #TODO: change to async
-    def turn_off(self, **kwargs):
-        self._api.light_toggle(self._macaddr)
-        self._api.update()
+    async def async_turn_off(self, **kwargs):
+        await self._api.light_toggle(self._macaddr)

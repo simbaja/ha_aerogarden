@@ -36,7 +36,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     return True
 
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     coordinator: AerogardenUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
@@ -46,3 +45,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     return ok
 
+async def async_update_options(hass: HomeAssistant, config_entry: ConfigEntry):
+    """Update options."""
+    await hass.config_entries.async_reload(config_entry.entry_id)

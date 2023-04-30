@@ -1,61 +1,37 @@
 import base64
 import logging
+from turtle import update
 import urllib
-import requests
-from requests import RequestException
+import aiohttp
 
-from ..const import DEFAULT_HOST
+from .const import DEFAULT_HOST, LOGIN_URL, STATUS_URL, UPDATE_URL
+from .exceptions import *
 
 _LOGGER = logging.getLogger(__name__)
 
 class AerogardenApi:
-    def __init__(self, username, password, host=None):
+    def __init__(self, session: aiohttp.ClientSession, username: str, password: str, host:str=None):
+        self._session = session
         self._username = urllib.parse.quote(username)
         self._password = urllib.parse.quote(password)
         self._host = host if host else DEFAULT_HOST
         self._userid = None
-        self._error_msg = None
         self._data = None
-        self.gardens = []
 
-        self._login_url = "/api/Admin/Login"
-        self._status_url = "/api/CustomData/QueryUserDevice"
-        self._update_url = "/api/Custom/UpdateDeviceConfig"
+        self.gardens = []
 
         self._headers = {
             "User-Agent": "HA-Aerogarden/0.1",
             "Content-Type": "application/x-www-form-urlencoded",
         }
 
-        self.login()
+    @property
+    def is_logged_in(self):
+        return True if self._userid else False
 
     @property
-    def error(self):
-        return self._error_msg
-
-    def login(self):
-
-        post_data = "mail=" + self._username + "&userPwd=" + self._password
-        url = self._host + self._login_url
-
-        try:
-            r = requests.post(url, data=post_data, headers=self._headers)
-        except RequestException:
-            _LOGGER.exception("Error communicating with aerogarden servers")
-            return False
-
-        response = r.json()
-
-        userid = response["code"]
-        if userid > 0:
-            self._userid = str(userid)
-        else:
-            self._error_msg = "Login api call returned %s" % (response["code"])
-
-    def is_valid_login(self):
-        if self._userid:
-            return True
-        return False
+    def gardens(self):
+        return self._data.keys()
 
     def garden_name(self, macaddr):
         multi_garden = self.garden_property(macaddr, "chooseGarden")
@@ -72,11 +48,72 @@ class AerogardenApi:
 
         return self._data[macaddr].get(field, None)
 
-    def light_toggle(self, macaddr):
+    async def login(self):
+        post_data = "mail=" + self._username + "&userPwd=" + self._password
+        url = self._host + LOGIN_URL
+
+        try:
+            async with self._session.post(url, data=post_data, headers=self._headers) as r:
+                response = await r.json()
+
+                userid = response["code"]
+                if userid > 0:
+                    self._userid = str(userid)
+                else:
+                    raise AerogardenServerError(f"Login call returned unexpected response {response}")
+        except AerogardenException as ex:
+            _LOGGER.exception("Error communicating with Aerogarden API", exc_info=ex)
+            raise
+        except Exception as ex:
+            _LOGGER.exception("Error communicating with Aerogarden API", exc_info=ex)
+            raise AerogardenAuthFailedError
+
+    async def update(self):
+        data = {}
+        if not self.is_logged_in:
+            return
+
+        url = self._host + STATUS_URL
+        post_data = "userID=" + self._userid
+
+        try:
+            async with self._session.post(url, data=post_data, headers=self._headers) as r:
+                garden_data = await r.json()
+
+                if "Message" in garden_data:
+                    raise AerogardenServerError(f"Could not update Aerogarden information: {garden_data['Message']}")
+                
+                for garden in garden_data:
+                    if "plantedName" in garden:
+                        garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
+                            "utf-8"
+                        )  
+
+                # Seems to be for multigarden config, untested, adapted from
+                # https://github.com/JeremyKennedy/homeassistant-aerogarden/commit/5854477c35103d724b86490b90e286b5d74f6660
+                id = garden.get("configID", None)
+                garden_mac = garden["airGuid"] + "-" + ("" if id is None else str(id))
+                data[garden_mac] = garden
+
+                _LOGGER.debug("Updating data {}".format(data))
+                self._data = data
+                self.gardens = self._data.keys()
+        except AerogardenException as ex:
+            _LOGGER.exception("Error communicating with Aerogarden API", exc_info=ex)
+            raise
+        except Exception as ex:
+            _LOGGER.exception("Error communicating with Aerogarden API", exc_info=ex)
+            raise AerogardenAuthFailedError
+
+    async def light_toggle(self, macaddr):
         """light_toggle:
         Toggles between Bright, Dimmed, and Off.
         I couldn't find any way to set a specific state, it just cycles between the three.
         """
+
+        if not self.is_logged_in:
+            return
+
         if macaddr not in self._data:
             return None
 
@@ -88,67 +125,21 @@ class AerogardenApi:
             % (self.garden_property(macaddr, "lightTemp"))
             # TODO: Light Temp may not matter, check.
         }
-        url = self._host + self._update_url
+        url = self._host + UPDATE_URL
         _LOGGER.debug(f"Sending POST data to toggle light: {post_data}")
 
         try:
-            r = requests.post(url, data=post_data, headers=self._headers)
-        except RequestException:
-            _LOGGER.exception("Error communicating with aerogarden servers")
-            return False
+            async with self._session.post(url, data=post_data, headers=self._headers) as r:
+                response = await r.json()
 
-        results = r.json()
+                if "code" not in response or response["code"] != 1:
+                    raise AerogardenServerError(f"Toggle light call returned unexpected response {response}")
+        except AerogardenException as ex:
+            _LOGGER.exception("Error communicating with Aerogarden API", exc_info=ex)
+            raise
+        except Exception as ex:
+            _LOGGER.exception("Error communicating with Aerogarden API", exc_info=ex)
+            raise AerogardenAuthFailedError
 
-        if "code" in results:
-            if results["code"] == 1:
-                return True
-
-        self._error_msg = "Didn't get code 1 from update API call: %s" % (
-            results["msg"]
-        )
-        self.update(no_throttle=True)
-
-        return False
-
-    @property
-    def gardens(self):
-        return self._data.keys()
-
-    def update(self):
-        data = {}
-        if not self.is_valid_login():
-            return
-
-        url = self._host + self._status_url
-        post_data = "userID=" + self._userid
-
-        try:
-            r = requests.post(url, data=post_data, headers=self._headers)
-        except RequestException:
-            _LOGGER.exception("Error communicating with aerogarden servers")
-            return False
-
-        garden_data = r.json()
-
-        if "Message" in garden_data:
-            self._error_msg = "Couldn't get data for garden (correct macaddr?): %s" % (
-                garden_data["Message"]
-            )
-            return False
-
-        for garden in garden_data:
-            if "plantedName" in garden:
-                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
-                    "utf-8"
-                )
-
-            # Seems to be for multigarden config, untested, adapted from
-            # https://github.com/JeremyKennedy/homeassistant-aerogarden/commit/5854477c35103d724b86490b90e286b5d74f6660
-            id = garden.get("configID", None)
-            garden_mac = garden["airGuid"] + "-" + ("" if id is None else str(id))
-            data[garden_mac] = garden
-
-        _LOGGER.debug("Updating data {}".format(data))
-        self._data = data
-        self.gardens = self._data.keys()
-        return True
+        #force an update after making a change
+        await update()
