@@ -17,7 +17,7 @@
       }  
     },
     "error": {
-      "invalid_auth": "Aerogarden authentication failed. Are your credentials correct?",      
+      "invalid_auth": "Aerogarden authentication failed.",      
       "cannot_connect": "Cannot connect, please try again later.",
       "unknown": "An unknown error occured"
     },

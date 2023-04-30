@@ -1,4 +1,4 @@
-"""Adds config flow for Mila integration."""
+"""Adds config flow for Aerogarden integration."""
 
 from asyncio.log import logger
 import logging
@@ -6,7 +6,7 @@ from typing import Any, Mapping, Optional
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow, CONN_CLASS_CLOUD_POLL
-from homeassistant.const import CONF_SCAN_INTERVAL, CONF_EMAIL, CONF_PASSWORD
+from homeassistant.const import CONF_SCAN_INTERVAL, CONF_USERNAME, CONF_PASSWORD
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import aiohttp_client
 from homeassistant.core import callback
@@ -22,7 +22,7 @@ from .const import (
 
 CREDENTIALS_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_EMAIL): cv.string,
+        vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
     }
 )
@@ -62,7 +62,7 @@ class AerogardenConfigFlow(ConfigFlow, domain=DOMAIN):
 
         api = AerogardenApi(
             session, 
-            self._user_input[CONF_EMAIL], 
+            self._user_input[CONF_USERNAME], 
             self._user_input[CONF_PASSWORD]
         )
 
@@ -92,10 +92,10 @@ class AerogardenConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if self._existing_entry:
             extra_inputs = self._existing_entry
-        self._user_input[CONF_EMAIL] = extra_inputs[CONF_EMAIL]
+        self._user_input[CONF_USERNAME] = extra_inputs[CONF_USERNAME]
 
         if self.unique_id is None:
-            await self.async_set_unique_id(self._user_input[CONF_EMAIL])
+            await self.async_set_unique_id(self._user_input[CONF_USERNAME])
             self._abort_if_unique_id_configured()
 
         try:
@@ -112,7 +112,7 @@ class AerogardenConfigFlow(ConfigFlow, domain=DOMAIN):
         if step_id == "user":
             #if we didn't have an entry, create one
             return self.async_create_entry(
-                title=self._user_input[CONF_EMAIL],
+                title=self._user_input[CONF_USERNAME],
                 data=self._user_input
             )
 
@@ -133,9 +133,9 @@ class AerogardenConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> FlowResult:
         """Handle configuration by re-auth."""
-        await self.async_set_unique_id(entry_data[CONF_EMAIL])
+        await self.async_set_unique_id(entry_data[CONF_USERNAME])
         self._existing_entry = {**entry_data}
-        self._description_placeholders = {CONF_EMAIL: entry_data[CONF_EMAIL]}
+        self._description_placeholders = {CONF_USERNAME: entry_data[CONF_USERNAME]}
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(

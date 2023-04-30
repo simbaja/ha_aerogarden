@@ -1,6 +1,5 @@
 import base64
 import logging
-from turtle import update
 import urllib
 import aiohttp
 
