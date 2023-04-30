@@ -3,18 +3,37 @@
     "title": "Aerogarden",
     "step": {
       "user": {
-        "title": "Fill in your Aerogarden credentials",
         "data": {
-          "username": "Aerogarden Username",
-          "password": "Aerogarden Password"
+          "username": "Username",
+          "password": "Password"
         }
-      }
+      },
+      "reauth_confirm": {
+        "description": "Authentication failed, please reauthenticate.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      }  
     },
     "error": {
-      "auth_error": "Aerogarden authentication failed. Are your credentials correct?"
+      "invalid_auth": "Aerogarden authentication failed. Are your credentials correct?",      
+      "cannot_connect": "Cannot connect, please try again later.",
+      "unknown": "An unknown error occured"
     },
     "abort": {
-      "already_configured": "Aerogarden is already configured"
+      "already_configured": "Aerogarden is already configured",
+      "reauth_successful": "Reauthentication was successful!"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Scan Interval",
+          "timeout": "Timeout"
+        } 
+      }
     }
   }
 }

@@ -1,7 +1,7 @@
-# homeassistant-aerogarden
+# Home Assistant Aerogarden
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/jacobdonenfeld/homeassistant-aerogarden/master.svg)](https://results.pre-commit.ci/latest/github/jacobdonenfeld/homeassistant-aerogarden/master)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/simbaja/homeassistant-aerogarden/master.svg)](https://results.pre-commit.ci/latest/github/simbaja/homeassistant-aerogarden/master)
 
 
 This is a custom component for [Home Assistant](http://home-assistant.io) that adds support for the Miracle Grow [AeroGarden](http://www.aerogarden.com) Wifi hydroponic gardens.
@@ -22,22 +22,16 @@ Currently, the code is setup to query the AeroGarden servers every 30 seconds.
 Copy contents of the custom_compents/aerogarden/ directory into your <HA-CONFIG>/custom_components/aerogarden directory (```/config/custom_components``` on hassio)
 
 Your directory structure should look like this:
+
 ```
    config/custom_components/aerogarden/__init__.py
    config/custom_components/aerogarden/binary_sensor.py
    config/custom_components/aerogarden/sensor.py
    config/custom_components/aerogarden/light.py
 ```
+
 ## Configuration
-Add the following snippet into your ```configuration.yaml```  replace [EMAIL] and [PASSWORD] with the account information you use in the AeroGarden phone app.
-
-```
-
-aerogarden:
-    username: [EMAIL]
-    password: [PASSWORD]
-
-```
+Configuration is done through Home Assistant Config Flow in the UI.
 
 ## Data available
 The component supports multiple gardens and multiple sensors will be created for each garden.  [GARDEN NAME] will be replaced by whatever you named the garden in the phone app.
@@ -55,7 +49,7 @@ The component supports multiple gardens and multiple sensors will be created for
 * sensor.aerogarden_[GARDEN NAME]_planted
 
 ### Sample screenshot
-![Screen Shot](https://raw.githubusercontent.com/jacobdonenfeld/homeassistant-aerogarden/master/screen_shot.png)
+![Screen Shot](https://raw.githubusercontent.com/simbaja/homeassistant-aerogarden/master/screen_shot.png)
 
 ## TODO
 1. Code cleanup, this is my first HA component - it probably needs some work.

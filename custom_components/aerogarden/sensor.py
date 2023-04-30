@@ -1,87 +1,29 @@
 import logging
+from typing import Callable
 
-import homeassistant
-from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 
-from .. import aerogarden
+from .const import DOMAIN
+from .update_coordinator import AerogardenUpdateCoordinator
+from .entities import AerogardenSensor
 
 _LOGGER = logging.getLogger(__name__)
 
-DEPENDENCIES = ["aerogarden"]
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: Callable):
+    """Aerogarden sensors."""
 
-
-class AerogardenSensor(CoordinatorEntity, Entity):
-    def __init__(
-        self,
-        macaddr,
-        aerogarden_api,
-        field,
-        label=None,
-        icon=None,
-        unit=None,
-    ):
-        self._aerogarden = aerogarden_api
-        self._macaddr = macaddr
-        self._field = field
-        self._label = label
-        if not label:
-            self._label = field
-        self._icon = icon
-        self._unit = unit
-
-        self._garden_name = self._aerogarden.garden_name(self._macaddr)
-
-        self._name = "%s %s" % (
-            self._garden_name,
-            self._label,
-        )
-
-        self._unique_id = "%s %s" % (
-            self._garden_name,
-            self._field,
-        )
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-    @property
-    def unique_id(self):
-        """Return the ID of this purifier."""
-        return self._unique_id
-
-    @property
-    def name(self):
-        """Return the name of the garden if any."""
-        return self._name
-
-    @property
-    def state(self):
-        return self._state
-
-    @property
-    def icon(self):
-        return self._icon
-
-    @property
-    def native_unit_of_measurement(self):
-        return self._unit
-
-    @property
-    def unit_of_measurement(self):
-        return self._unit
-
-    def update(self):
-        self._aerogarden.update()
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-
-async def async_setup_entry(hass, ConfigEntry, async_add_entities):
-    """Setup the aerogarden platform"""
-
-    aerogarden_api = hass.data[aerogarden.DOMAIN]
+    _LOGGER.debug('Adding Aerogarden Sensor Entities')
+    coordinator: AerogardenUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     sensors = []
     sensor_fields = {
-        "plantedDay": {"label": "Planted Days", "icon": "mdi:calendar", "unit": "Days"},
+        "plantedDay": 
+        {
+            "label": "Planted Days", 
+            "icon": "mdi:calendar", 
+            "unit": "Days"
+        },
         "nutriRemindDay": {
             "label": "Nutrient Days",
             "icon": "mdi:calendar-clock",
@@ -94,13 +36,13 @@ async def async_setup_entry(hass, ConfigEntry, async_add_entities):
         },
     }
 
-    for garden in aerogarden_api.gardens:  # This may be unnecessary now
-        for field in sensor_fields.keys():  # plantedDay, NitriRemindDay, pumpLever
-            s = sensor_fields[field]  # Values
+    for garden in coordinator.api.gardens:
+        for field in sensor_fields.keys():
+            s = sensor_fields[field]
             sensors.append(
                 AerogardenSensor(
+                    coordinator,
                     garden,
-                    aerogarden_api,
                     field,
                     label=s["label"],
                     icon=s["icon"],

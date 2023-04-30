@@ -1,58 +1,23 @@
 import logging
+from typing import Callable
 
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 
-from .. import aerogarden
+from .const import DOMAIN
+from .update_coordinator import AerogardenUpdateCoordinator
+from .entities import AerogardenBinarySensor
 
 _LOGGER = logging.getLogger(__name__)
 
-DEPENDENCIES = ["aerogarden"]
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities: Callable):
+    """Aerogarden binary sensors."""
 
-
-class AerogardenBinarySensor(BinarySensorEntity):
-    def __init__(self, macaddr, aerogarden_api, field, label=None, icon=None):
-        self._aerogarden = aerogarden_api
-        self._macaddr = macaddr
-        self._field = field
-        self._label = label
-        if not label:
-            self._label = field
-        self._icon = icon
-
-        self._garden_name = self._aerogarden.garden_name(self._macaddr)
-
-        self._name = "%s %s" % (
-            self._garden_name,
-            self._label,
-        )
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def is_on(self):
-        return self._state == 1
-
-    @property
-    def icon(self):
-        return self._icon
-
-    def update(self):
-        self._aerogarden.update()
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    ag = hass.data[aerogarden.DATA_AEROGARDEN]
+    _LOGGER.debug('Adding Aerogarden Binary Sensor Entities')
+    coordinator: AerogardenUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
     sensors = []
     sensor_fields = {
-        # "lightStat": {
-        #     "label": "light",
-        #     "icon": "mdi:lightbulb"
-        # },
         "pumpStat": {
             "label": "pump",
             "icon": "mdi:water-pump",
@@ -67,13 +32,12 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         },
     }
 
-    for garden in ag.gardens:
-
+    for garden in coordinator.api.gardens:
         for field in sensor_fields.keys():
             s = sensor_fields[field]
             sensors.append(
                 AerogardenBinarySensor(
-                    garden, ag, field, label=s["label"], icon=s["icon"]
+                    coordinator, garden, field, label=s["label"], icon=s["icon"]
                 )
             )
 
