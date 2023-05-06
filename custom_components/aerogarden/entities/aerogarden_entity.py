@@ -30,8 +30,14 @@ class AerogardenEntity(CoordinatorEntity):
         return self._api
 
     @property
-    def device_info(self) -> Optional[Dict[str, Any]]:
-        return self.api.device_info
+    def device_info(self) -> Dict:
+        """Device info dictionary."""
+
+        return {
+            "identifiers": {(DOMAIN, self.mac_addr)},
+            "name": self._garden_name,
+            "manufacturer": "Aerogarden"
+        }
 
     @property
     def mac_addr(self) -> str:
@@ -39,7 +45,7 @@ class AerogardenEntity(CoordinatorEntity):
 
     @property
     def name(self) -> Optional[str]:
-        return 
+        return self._name
 
     @property
     def icon(self) -> Optional[str]:
